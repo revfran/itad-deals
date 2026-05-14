@@ -257,11 +257,10 @@
 
 <script>
 (() => {
-  // ── Configuración ──────────────────────────────────────────────────────────
+  // ── Configuración ─────────────────────────────────────────────────────────
   const CLIENT_ID    = 'a9d728e17273cce3';
   const REDIRECT_URI = 'https://revfran.github.io/itad-deals/';
   const AUTH_URL     = 'https://isthereanydeal.com/oauth/authorize/';
-  const TOKEN_URL    = 'https://isthereanydeal.com/oauth/token/';
   const API          = 'https://api.isthereanydeal.com';
   const COUNTRY      = 'ES';
   const SCOPE        = 'wait_read';
@@ -275,56 +274,22 @@
   const app     = document.getElementById('app');
   const actions = document.getElementById('headerActions');
 
-  // ── PKCE ──────────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
   function rndB64url(n) {
     return btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(n))))
       .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
   }
-  async function sha256B64url(s) {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-    return btoa(String.fromCharCode(...new Uint8Array(buf)))
-      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-  }
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  // ── OAuth ─────────────────────────────────────────────────────────────────
-  async function startLogin() {
-    const verifier  = rndB64url(43);
-    const state     = rndB64url(16);
-    const challenge = await sha256B64url(verifier);
-    ss.setItem('itad_v', verifier);
+  // ── OAuth – implicit flow (token en el hash, sin intercambio de red) ──────
+  function startLogin() {
+    const state = rndB64url(16);
     ss.setItem('itad_s', state);
-    location.href = `${AUTH_URL}?response_type=code`
+    location.href = `${AUTH_URL}?response_type=token`
       + `&client_id=${CLIENT_ID}`
       + `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`
       + `&scope=${SCOPE}`
-      + `&code_challenge=${challenge}`
-      + `&code_challenge_method=S256`
       + `&state=${state}`;
-  }
-
-  async function exchangeCode(params) {
-    const code = params.get('code');
-    if (!code || params.get('state') !== ss.getItem('itad_s')) {
-      throw new Error('Callback OAuth inválido o estado CSRF incorrecto.');
-    }
-    const res = await fetch(TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type:    'authorization_code',
-        code,
-        redirect_uri:  REDIRECT_URI,
-        client_id:     CLIENT_ID,
-        code_verifier: ss.getItem('itad_v'),
-      }),
-    });
-    if (!res.ok) throw new Error(`Token exchange falló (${res.status}). Intenta de nuevo.`);
-    const { access_token } = await res.json();
-    ss.setItem('itad_token', access_token);
-    ss.removeItem('itad_v');
-    ss.removeItem('itad_s');
-    history.replaceState({}, '', REDIRECT_URI);
-    return access_token;
   }
 
   // ── API calls ─────────────────────────────────────────────────────────────
@@ -353,10 +318,9 @@
     });
 
   // ── UI helpers ────────────────────────────────────────────────────────────
-  const setHTML = html => { app.innerHTML = html; };
-  const loading = msg  => setHTML(`<div class="loader"><div class="spinner"></div><p>${msg}</p></div>`);
-  const errBanner = msg => `<div class="error">⚠ ${msg}</div>`;
-  const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const setHTML   = html => { app.innerHTML = html; };
+  const loading   = msg  => setHTML(`<div class="loader"><div class="spinner"></div><p>${msg}</p></div>`);
+  const errBanner = msg  => `<div class="error">⚠ ${msg}</div>`;
 
   function doLogout() {
     ss.clear(); token = null; apiKey = null;
@@ -364,7 +328,7 @@
     showSetup();
   }
 
-  // ── Pantalla 1: API key ────────────────────────────────────────────────────
+  // ── Pantalla 1: API key ───────────────────────────────────────────────────
   function showSetup() {
     actions.innerHTML = '';
     setHTML(`
@@ -393,7 +357,7 @@
     inp.addEventListener('keydown', e => e.key === 'Enter' && go());
   }
 
-  // ── Pantalla 2: Login OAuth ────────────────────────────────────────────────
+  // ── Pantalla 2: Login OAuth ───────────────────────────────────────────────
   function showLoginStep() {
     setHTML(`
       <div class="card">
@@ -430,7 +394,6 @@
     try { [pricesRaw, lowsRaw] = await Promise.all([prices(ids), histLows(ids)]); }
     catch(e) { setHTML(errBanner(e.message)); return; }
 
-    // Indexar
     const priceIdx = {};
     pricesRaw.forEach(p => { priceIdx[p.id] = p.deals || []; });
     const lowIdx = {};
@@ -447,7 +410,6 @@
     document.getElementById('refreshBtn').addEventListener('click', loadDeals);
     document.getElementById('logoutBtn').addEventListener('click', doLogout);
 
-    // Enriquecer
     const enriched = games.map(g => {
       const deals   = priceIdx[g.id] || [];
       const byPrice = [...deals].sort((a,b) => a.price.amountInt - b.price.amountInt);
@@ -505,7 +467,7 @@
         priceBlock = `
           <div class="price-main">
             <span class="price-val">${g.onSale.price.amount.toFixed(2)} ${g.onSale.price.currency}</span>
-            <span class="badge badge-cut ${hot?'hot':''}">-${g.onSale.cut}%</span>
+            <span class="badge badge-cut ${hot?'hot':''}">${g.onSale.cut}%</span>
             ${g.isHistLow ? '<span class="badge badge-low">★ Mínimo histórico</span>' : ''}
           </div>
           <div class="price-meta">
@@ -541,21 +503,28 @@
 
   // ── Init ──────────────────────────────────────────────────────────────────
   async function init() {
+    // Implicit flow: el token llega en el hash (#access_token=…&state=…)
+    const hash   = new URLSearchParams(location.hash.slice(1));
     const params = new URLSearchParams(location.search);
 
-    // Callback OAuth
-    if (params.has('code')) {
-      loading('Completando autenticación…');
+    if (hash.has('access_token')) {
+      if (hash.get('state') !== ss.getItem('itad_s')) {
+        setHTML(errBanner('Estado OAuth inválido (posible CSRF).'));
+        return;
+      }
+      token = hash.get('access_token');
+      ss.setItem('itad_token', token);
+      ss.removeItem('itad_s');
+      history.replaceState({}, '', REDIRECT_URI);
       if (!apiKey) { ss.clear(); showSetup(); return; }
-      try { token = await exchangeCode(params); }
-      catch(e) { setHTML(errBanner(e.message)); return; }
       await loadDeals();
       return;
     }
 
-    // Error OAuth
-    if (params.has('error')) {
-      setHTML(errBanner(`ITAD denegó el acceso: ${params.get('error_description') || params.get('error')}`));
+    if (hash.has('error') || params.has('error')) {
+      const desc = hash.get('error_description') || hash.get('error')
+                || params.get('error_description') || params.get('error');
+      setHTML(errBanner(`ITAD denegó el acceso: ${desc}`));
       return;
     }
 
