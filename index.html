@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ITAD · Mi Wishlist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0b0d12;
+      --surface:  #13161f;
+      --surface2: #1c2030;
+      --border:   #252a3a;
+      --accent:   #4ade80;
+      --accent2:  #22d3ee;
+      --warn:     #fbbf24;
+      --danger:   #f87171;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --mono:     'IBM Plex Mono', monospace;
+      --sans:     'Space Grotesk', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(11,13,18,.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: .75rem 1rem;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .logo-mark {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; flex-shrink: 0;
+    }
+    header h1 {
+      font-size: .95rem; font-weight: 700; letter-spacing: -.01em;
+      flex: 1;
+    }
+    header h1 span { color: var(--accent); }
+    #headerActions { display: flex; gap: .5rem; align-items: center; }
+    .hdr-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--muted);
+      padding: .3rem .65rem; font-size: .75rem;
+      font-family: var(--sans); cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .hdr-btn:hover { color: var(--text); border-color: var(--muted); }
+    .hdr-btn.primary { color: var(--accent); border-color: var(--accent); }
+
+    /* ── Main container ──────────────────────── */
+    main { padding: 1rem; max-width: 640px; margin: 0 auto; }
+
+    /* ── Setup / login cards ─────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .card-header {
+      display: flex; align-items: center; gap: .6rem;
+      margin-bottom: 1rem;
+    }
+    .card-icon {
+      font-size: 1.25rem;
+      background: var(--surface2);
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card h2 { font-size: 1rem; font-weight: 700; }
+    .card p {
+      color: var(--muted); font-size: .85rem;
+      line-height: 1.6; margin-bottom: 1.25rem;
+    }
+    .field { margin-bottom: 1rem; }
+    .field label {
+      display: block;
+      font-family: var(--mono); font-size: .7rem;
+      color: var(--muted); letter-spacing: .08em;
+      text-transform: uppercase; margin-bottom: .4rem;
+    }
+    .field input {
+      width: 100%; background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: .7rem .9rem;
+      color: var(--text); font-family: var(--mono); font-size: .85rem;
+      transition: border-color .15s;
+    }
+    .field input:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(74,222,128,.1);
+    }
+    .btn {
+      width: 100%; padding: .8rem;
+      border: none; border-radius: 8px;
+      font-family: var(--sans); font-size: .9rem; font-weight: 600;
+      cursor: pointer; transition: opacity .15s, transform .1s;
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .35; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #0b0d12; }
+    .btn-ghost {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border); margin-top: .6rem;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+    /* ── Loading ─────────────────────────────── */
+    .loader {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 4rem 1rem; gap: 1rem; color: var(--muted);
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader p { font-size: .85rem; }
+
+    /* ── Error banner ────────────────────────── */
+    .error {
+      background: rgba(248,113,113,.08);
+      border: 1px solid rgba(248,113,113,.3);
+      border-radius: 8px; padding: .75rem 1rem;
+      color: var(--danger); font-size: .85rem;
+      margin-bottom: .75rem; line-height: 1.5;
+    }
+
+    /* ── Sort bar ────────────────────────────── */
+    .toolbar {
+      display: flex; align-items: center;
+      gap: .5rem; margin-bottom: .75rem; flex-wrap: wrap;
+    }
+    .chip {
+      padding: .3rem .7rem;
+      border: 1px solid var(--border); border-radius: 20px;
+      background: var(--surface); color: var(--muted);
+      font-size: .75rem; font-family: var(--mono);
+      cursor: pointer; transition: all .15s;
+    }
+    .chip.active { background: var(--accent); border-color: var(--accent); color: #0b0d12; font-weight: 600; }
+    .summary {
+      font-size: .78rem; color: var(--muted);
+      font-family: var(--mono);
+      margin-bottom: .85rem;
+    }
+    .summary strong { color: var(--accent); }
+
+    /* ── Game cards ──────────────────────────── */
+    .games-list { display: flex; flex-direction: column; gap: .6rem; }
+    .game-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+      display: flex; gap: 0;
+      transition: border-color .2s;
+      animation: fadeUp .3s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: none; }
+    }
+    .game-card.on-sale { border-color: rgba(74,222,128,.35); }
+    .game-card.hist-low { border-color: var(--warn); }
+
+    .game-thumb {
+      width: 76px; min-width: 76px;
+      background: var(--surface2); overflow: hidden;
+    }
+    .game-thumb img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .thumb-placeholder {
+      width: 100%; height: 100%; min-height: 76px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 1.4rem;
+    }
+
+    .game-body { flex: 1; padding: .65rem .75rem; min-width: 0; }
+    .game-title {
+      font-size: .85rem; font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: .4rem;
+    }
+
+    .price-main {
+      display: flex; align-items: center; gap: .4rem;
+      flex-wrap: wrap; margin-bottom: .2rem;
+    }
+    .price-val {
+      font-family: var(--mono); font-size: .9rem; font-weight: 600;
+    }
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 1px 5px; border-radius: 4px;
+      font-size: .67rem; font-weight: 700; font-family: var(--mono);
+    }
+    .badge-cut { background: rgba(74,222,128,.15); color: var(--accent); }
+    .badge-cut.hot { background: rgba(248,113,113,.15); color: var(--danger); }
+    .badge-low { background: rgba(251,191,36,.15); color: var(--warn); }
+
+    .price-meta {
+      display: flex; align-items: center; gap: .4rem;
+      font-size: .72rem; color: var(--muted);
+    }
+    .price-regular { text-decoration: line-through; font-family: var(--mono); }
+
+    .game-footer { margin-top: .45rem; }
+    .buy-link {
+      font-size: .72rem; color: var(--accent2); text-decoration: none;
+      font-family: var(--mono);
+    }
+    .buy-link:hover { text-decoration: underline; }
+    .no-price { font-size: .75rem; color: var(--muted); }
+
+    /* Empty state */
+    .empty {
+      text-align: center; padding: 3rem 1rem; color: var(--muted);
+    }
+    .empty a { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">🏷</div>
+  <h1>ITAD <span>Deals</span></h1>
+  <div id="headerActions"></div>
+</header>
+
+<main id="app">
+  <div class="loader"><div class="spinner"></div><p>Iniciando…</p></div>
+</main>
+
+<script>
+(() => {
+  // ── Configuración ──────────────────────────────────────────────────────────
+  const CLIENT_ID    = 'a9d728e17273cce3';
+  const REDIRECT_URI = 'https://revfran.github.io/itad-deals/';
+  const AUTH_URL     = 'https://isthereanydeal.com/oauth/authorize/';
+  const TOKEN_URL    = 'https://isthereanydeal.com/oauth/token/';
+  const API          = 'https://api.isthereanydeal.com';
+  const COUNTRY      = 'ES';
+  const SCOPE        = 'wait_read';
+
+  // ── Estado en sessionStorage (se borra al cerrar pestaña) ─────────────────
+  const ss = sessionStorage;
+  let token  = ss.getItem('itad_token');
+  let apiKey = ss.getItem('itad_api_key');
+  let sort   = 'cut';
+
+  const app     = document.getElementById('app');
+  const actions = document.getElementById('headerActions');
+
+  // ── PKCE ──────────────────────────────────────────────────────────────────
+  function rndB64url(n) {
+    return btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(n))))
+      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  }
+  async function sha256B64url(s) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return btoa(String.fromCharCode(...new Uint8Array(buf)))
+      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  }
+
+  // ── OAuth ─────────────────────────────────────────────────────────────────
+  async function startLogin() {
+    const verifier  = rndB64url(43);
+    const state     = rndB64url(16);
+    const challenge = await sha256B64url(verifier);
+    ss.setItem('itad_v', verifier);
+    ss.setItem('itad_s', state);
+    location.href = `${AUTH_URL}?response_type=code`
+      + `&client_id=${CLIENT_ID}`
+      + `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`
+      + `&scope=${SCOPE}`
+      + `&code_challenge=${challenge}`
+      + `&code_challenge_method=S256`
+      + `&state=${state}`;
+  }
+
+  async function exchangeCode(params) {
+    const code = params.get('code');
+    if (!code || params.get('state') !== ss.getItem('itad_s')) {
+      throw new Error('Callback OAuth inválido o estado CSRF incorrecto.');
+    }
+    const res = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type:    'authorization_code',
+        code,
+        redirect_uri:  REDIRECT_URI,
+        client_id:     CLIENT_ID,
+        code_verifier: ss.getItem('itad_v'),
+      }),
+    });
+    if (!res.ok) throw new Error(`Token exchange falló (${res.status}). Intenta de nuevo.`);
+    const { access_token } = await res.json();
+    ss.setItem('itad_token', access_token);
+    ss.removeItem('itad_v');
+    ss.removeItem('itad_s');
+    history.replaceState({}, '', REDIRECT_URI);
+    return access_token;
+  }
+
+  // ── API calls ─────────────────────────────────────────────────────────────
+  async function apiFetch(path, opts = {}) {
+    const res = await fetch(`${API}${path}`, opts);
+    if (res.status === 401) { doLogout(); throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); }
+    if (!res.ok) throw new Error(`API error ${res.status} en ${path}`);
+    return res.json();
+  }
+
+  const waitlist = () =>
+    apiFetch('/waitlist/games/v1', { headers: { Authorization: `Bearer ${token}` } });
+
+  const prices = ids =>
+    apiFetch(`/games/prices/v3?country=${COUNTRY}&deals=false`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(ids),
+    });
+
+  const histLows = ids =>
+    apiFetch(`/games/historylow/v1?country=${COUNTRY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(ids),
+    });
+
+  // ── UI helpers ────────────────────────────────────────────────────────────
+  const setHTML = html => { app.innerHTML = html; };
+  const loading = msg  => setHTML(`<div class="loader"><div class="spinner"></div><p>${msg}</p></div>`);
+  const errBanner = msg => `<div class="error">⚠ ${msg}</div>`;
+
+  function doLogout() {
+    ss.clear(); token = null; apiKey = null;
+    actions.innerHTML = '';
+    showSetup();
+  }
+
+  // ── Pantalla 1: API key ────────────────────────────────────────────────────
+  function showSetup() {
+    actions.innerHTML = '';
+    setHTML(`
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🔑</div>
+          <div><h2>API Key</h2></div>
+        </div>
+        <p>Introduce tu API key de IsThereAnyDeal. Se guarda solo en esta pestaña del navegador y desaparece al cerrarla.</p>
+        <div class="field">
+          <label>API Key</label>
+          <input id="keyInput" type="password" placeholder="dd1b3c…ca9472" autocomplete="off" spellcheck="false">
+        </div>
+        <button class="btn btn-primary" id="keyBtn">Continuar →</button>
+      </div>
+    `);
+    const inp = document.getElementById('keyInput');
+    const btn = document.getElementById('keyBtn');
+    const go = () => {
+      const v = inp.value.trim();
+      if (!v) return;
+      ss.setItem('itad_api_key', v); apiKey = v;
+      showLoginStep();
+    };
+    btn.addEventListener('click', go);
+    inp.addEventListener('keydown', e => e.key === 'Enter' && go());
+  }
+
+  // ── Pantalla 2: Login OAuth ────────────────────────────────────────────────
+  function showLoginStep() {
+    setHTML(`
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🔐</div>
+          <div><h2>Conectar cuenta</h2></div>
+        </div>
+        <p>Serás redirigido a IsThereAnyDeal para autenticarte de forma segura. Tu contraseña nunca pasa por esta app.</p>
+        <button class="btn btn-primary" id="loginBtn">Iniciar sesión con ITAD</button>
+        <button class="btn btn-ghost" id="backBtn">← Cambiar API key</button>
+      </div>
+    `);
+    document.getElementById('loginBtn').addEventListener('click', startLogin);
+    document.getElementById('backBtn').addEventListener('click', () => {
+      ss.removeItem('itad_api_key'); apiKey = null; showSetup();
+    });
+  }
+
+  // ── Pantalla 3: Deals ─────────────────────────────────────────────────────
+  async function loadDeals() {
+    loading('Obteniendo tu wishlist…');
+    let games;
+    try { games = await waitlist(); }
+    catch(e) { setHTML(errBanner(e.message) + `<button class="btn btn-ghost" onclick="location.reload()">Reintentar</button>`); return; }
+
+    if (!games.length) {
+      setHTML(`<div class="empty"><p>Tu wishlist de ITAD está vacía.</p><p style="margin-top:.5rem"><a href="https://isthereanydeal.com/waitlist/" target="_blank">Añadir juegos →</a></p></div>`);
+      return;
+    }
+
+    loading(`Consultando precios para ${games.length} juegos…`);
+    const ids = games.map(g => g.id);
+    let pricesRaw, lowsRaw;
+    try { [pricesRaw, lowsRaw] = await Promise.all([prices(ids), histLows(ids)]); }
+    catch(e) { setHTML(errBanner(e.message)); return; }
+
+    // Indexar
+    const priceIdx = {};
+    pricesRaw.forEach(p => { priceIdx[p.id] = p.deals || []; });
+    const lowIdx = {};
+    lowsRaw.forEach(l => { lowIdx[l.id] = l.low; });
+
+    renderDeals(games, priceIdx, lowIdx);
+  }
+
+  function renderDeals(games, priceIdx, lowIdx) {
+    actions.innerHTML = `
+      <button class="hdr-btn primary" id="refreshBtn">↻ Actualizar</button>
+      <button class="hdr-btn" id="logoutBtn">Salir</button>
+    `;
+    document.getElementById('refreshBtn').addEventListener('click', loadDeals);
+    document.getElementById('logoutBtn').addEventListener('click', doLogout);
+
+    // Enriquecer
+    const enriched = games.map(g => {
+      const deals = priceIdx[g.id] || [];
+      const best  = [...deals].sort((a,b) => a.price.amountInt - b.price.amountInt);
+      const onSale = best.find(d => d.cut > 0) || null;
+      const any    = best[0] || null;
+      const low    = lowIdx[g.id] || null;
+      const isHistLow = onSale && low && onSale.price.amountInt <= low.amountInt;
+      return { ...g, onSale, any, low, isHistLow };
+    });
+
+    const sorted = [...enriched].sort((a, b) => {
+      if (sort === 'cut') return (b.onSale?.cut ?? 0) - (a.onSale?.cut ?? 0);
+      if (sort === 'price') {
+        const pa = a.onSale?.price.amountInt ?? a.any?.price.amountInt ?? 1e9;
+        const pb = b.onSale?.price.amountInt ?? b.any?.price.amountInt ?? 1e9;
+        return pa - pb;
+      }
+      return a.title.localeCompare(b.title);
+    });
+
+    const onSaleN = enriched.filter(g => g.onSale).length;
+    const histN   = enriched.filter(g => g.isHistLow).length;
+
+    setHTML(`
+      <div class="toolbar">
+        <button class="chip ${sort==='cut'?'active':''}"   data-sort="cut">% Descuento</button>
+        <button class="chip ${sort==='price'?'active':''}" data-sort="price">Precio</button>
+        <button class="chip ${sort==='alpha'?'active':''}" data-sort="alpha">A–Z</button>
+      </div>
+      <p class="summary">
+        ${sorted.length} juegos · <strong>${onSaleN} en oferta</strong>
+        ${histN ? ` · <span style="color:var(--warn)">${histN} mínimo histórico</span>` : ''}
+      </p>
+      <div class="games-list" id="list"></div>
+    `);
+
+    document.querySelectorAll('.chip').forEach(c =>
+      c.addEventListener('click', () => { sort = c.dataset.sort; renderDeals(games, priceIdx, lowIdx); })
+    );
+
+    const list = document.getElementById('list');
+    sorted.forEach((g, i) => {
+      const el = document.createElement('div');
+      el.className = 'game-card' + (g.isHistLow ? ' hist-low' : g.onSale ? ' on-sale' : '');
+      el.style.animationDelay = `${i * 25}ms`;
+
+      const thumb = g.assets?.banner145 || g.assets?.boxart || '';
+      const imgEl = thumb
+        ? `<img src="${thumb}" alt="${g.title}" loading="lazy">`
+        : `<div class="thumb-placeholder">🎮</div>`;
+
+      let priceBlock = '';
+      if (g.onSale) {
+        const hot = g.onSale.cut >= 75;
+        priceBlock = `
+          <div class="price-main">
+            <span class="price-val">${g.onSale.price.amount.toFixed(2)} ${g.onSale.price.currency}</span>
+            <span class="badge badge-cut ${hot?'hot':''}">-${g.onSale.cut}%</span>
+            ${g.isHistLow ? '<span class="badge badge-low">★ Mínimo histórico</span>' : ''}
+          </div>
+          <div class="price-meta">
+            <span class="price-regular">${g.onSale.regular.amount.toFixed(2)} ${g.onSale.regular.currency}</span>
+            <span>en ${g.onSale.shop.name}</span>
+          </div>
+        `;
+      } else if (g.any) {
+        priceBlock = `
+          <div class="price-main">
+            <span class="price-val">${g.any.price.amount.toFixed(2)} ${g.any.price.currency}</span>
+          </div>
+          <div class="price-meta"><span>sin descuento · ${g.any.shop.name}</span></div>
+        `;
+      } else {
+        priceBlock = `<span class="no-price">Sin precio disponible</span>`;
+      }
+
+      const url = g.onSale?.url || g.any?.url || `https://isthereanydeal.com/game/${g.slug}/`;
+      el.innerHTML = `
+        <div class="game-thumb">${imgEl}</div>
+        <div class="game-body">
+          <div class="game-title" title="${g.title}">${g.title}</div>
+          ${priceBlock}
+          <div class="game-footer">
+            <a class="buy-link" href="${url}" target="_blank" rel="noopener">Ver oferta →</a>
+          </div>
+        </div>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  async function init() {
+    const params = new URLSearchParams(location.search);
+
+    // Callback OAuth
+    if (params.has('code')) {
+      loading('Completando autenticación…');
+      if (!apiKey) { ss.clear(); showSetup(); return; }
+      try { token = await exchangeCode(params); }
+      catch(e) { setHTML(errBanner(e.message)); return; }
+      await loadDeals();
+      return;
+    }
+
+    // Error OAuth
+    if (params.has('error')) {
+      setHTML(errBanner(`ITAD denegó el acceso: ${params.get('error_description') || params.get('error')}`));
+      return;
+    }
+
+    if (token && apiKey) { await loadDeals(); return; }
+    if (!apiKey)         { showSetup(); return; }
+    showLoginStep();
+  }
+
+  init().catch(e => setHTML(errBanner(e.message)));
+})();
+</script>
+</body>
+</html>
