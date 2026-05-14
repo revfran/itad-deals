@@ -356,6 +356,7 @@
   const setHTML = html => { app.innerHTML = html; };
   const loading = msg  => setHTML(`<div class="loader"><div class="spinner"></div><p>${msg}</p></div>`);
   const errBanner = msg => `<div class="error">⚠ ${msg}</div>`;
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   function doLogout() {
     ss.clear(); token = null; apiKey = null;
@@ -448,11 +449,11 @@
 
     // Enriquecer
     const enriched = games.map(g => {
-      const deals = priceIdx[g.id] || [];
-      const best  = [...deals].sort((a,b) => a.price.amountInt - b.price.amountInt);
-      const onSale = best.find(d => d.cut > 0) || null;
-      const any    = best[0] || null;
-      const low    = lowIdx[g.id] || null;
+      const deals   = priceIdx[g.id] || [];
+      const byPrice = [...deals].sort((a,b) => a.price.amountInt - b.price.amountInt);
+      const onSale  = [...deals].sort((a,b) => b.cut - a.cut).find(d => d.cut > 0) || null;
+      const any     = byPrice[0] || null;
+      const low     = lowIdx[g.id] || null;
       const isHistLow = onSale && low && onSale.price.amountInt <= low.amountInt;
       return { ...g, onSale, any, low, isHistLow };
     });
@@ -495,7 +496,7 @@
 
       const thumb = g.assets?.banner145 || g.assets?.boxart || '';
       const imgEl = thumb
-        ? `<img src="${thumb}" alt="${g.title}" loading="lazy">`
+        ? `<img src="${thumb}" alt="${esc(g.title)}" loading="lazy">`
         : `<div class="thumb-placeholder">🎮</div>`;
 
       let priceBlock = '';
@@ -509,7 +510,7 @@
           </div>
           <div class="price-meta">
             <span class="price-regular">${g.onSale.regular.amount.toFixed(2)} ${g.onSale.regular.currency}</span>
-            <span>en ${g.onSale.shop.name}</span>
+            <span>en ${esc(g.onSale.shop.name)}</span>
           </div>
         `;
       } else if (g.any) {
@@ -517,7 +518,7 @@
           <div class="price-main">
             <span class="price-val">${g.any.price.amount.toFixed(2)} ${g.any.price.currency}</span>
           </div>
-          <div class="price-meta"><span>sin descuento · ${g.any.shop.name}</span></div>
+          <div class="price-meta"><span>sin descuento · ${esc(g.any.shop.name)}</span></div>
         `;
       } else {
         priceBlock = `<span class="no-price">Sin precio disponible</span>`;
@@ -527,7 +528,7 @@
       el.innerHTML = `
         <div class="game-thumb">${imgEl}</div>
         <div class="game-body">
-          <div class="game-title" title="${g.title}">${g.title}</div>
+          <div class="game-title" title="${esc(g.title)}">${esc(g.title)}</div>
           ${priceBlock}
           <div class="game-footer">
             <a class="buy-link" href="${url}" target="_blank" rel="noopener">Ver oferta →</a>
